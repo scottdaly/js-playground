@@ -1,0 +1,56 @@
+@import "./styles/monaco-overrides.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+:root.light-mode {
+  color-scheme: light;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+code,
+pre,
+textarea {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1c25;
+}
+
+:root.light-mode ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 4px;
+}
+
+:root.light-mode ::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #667eea;
+}
+
+:root.light-mode ::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

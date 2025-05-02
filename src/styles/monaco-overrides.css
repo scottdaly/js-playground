@@ -1,0 +1,30 @@
+/* src/styles/monaco-overrides.css */
+
+/* Override default Monaco error squiggle */
+.monaco-editor .squiggly-error {
+  /* Remove the SVG background image squiggle */
+  border-bottom: 2px solid red !important;
+  background: none !important;
+  /* Optionally, add a different style like a solid underline */
+  /* border-bottom: 1px solid red !important; */
+}
+
+/* You can add overrides for warning and info too if needed */
+/*
+.monaco-editor .squiggly-warning {
+  border-bottom: 1px solid orange !important;
+}
+
+.monaco-editor .squiggly-info {
+  border-bottom: 1px solid blue !important;
+}
+*/
+
+/* Style for unused code/variables */
+.monaco-editor .squiggly-unnecessary {
+  /* Override default dashed border and opacity */
+  border-bottom: 2px solid yellow !important;
+  opacity: 1 !important; /* Ensure it's not faded */
+  /* Monaco might also use a background for this, remove if necessary */
+  /* background: none !important; */
+}
