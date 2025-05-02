@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import CodeEditor from "./CodeEditor";
 import ConsoleOutput from "./ConsoleOutput";
 import Header from "./Header";
@@ -11,6 +11,7 @@ const Playground: React.FC = () => {
   const [output, setOutput] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const workerRef = useRef<Worker | null>(null);
 
   // Load saved code from localStorage on component mount
   useEffect(() => {
@@ -18,6 +19,10 @@ const Playground: React.FC = () => {
     if (savedCode) {
       setCode(savedCode);
     }
+    // Cleanup worker on component unmount
+    return () => {
+      workerRef.current?.terminate();
+    };
   }, []);
 
   // Save code to localStorage whenever it changes
@@ -26,68 +31,69 @@ const Playground: React.FC = () => {
   }, [code]);
 
   const handleRunCode = () => {
+    let initialOutput: string[] = [];
+    // Basic static analysis for obvious infinite loops
+    const infiniteLoopPattern = /while\s*\(\s*true\s*\)|for\s*\(\s*;\s*;\s*\)/;
+    if (infiniteLoopPattern.test(code)) {
+      initialOutput.push(
+        "[Warning] Potential infinite loop detected (e.g., while(true) or for(;;)). Execution will proceed but may be terminated if it runs too long or produces excessive output."
+      );
+    }
+
+    // Terminate existing worker if running
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+
     setIsRunning(true);
-    setOutput([]);
+    // Prepend static analysis warnings, then add "Running code..."
+    setOutput([...initialOutput, "Running code..."]);
 
-    // Create a safe console to capture output
-    const capturedOutput: string[] = [];
+    const worker = new Worker("/code-runner.js");
+    workerRef.current = worker;
 
-    const safeConsole = {
-      log: (...args: any[]) => {
-        capturedOutput.push(
-          args
-            .map((arg) =>
-              typeof arg === "object" ? JSON.stringify(arg) : String(arg)
-            )
-            .join(" ")
-        );
-      },
-      error: (...args: any[]) => {
-        capturedOutput.push(
-          "[Error] " +
-            args
-              .map((arg) =>
-                typeof arg === "object" ? JSON.stringify(arg) : String(arg)
-              )
-              .join(" ")
-        );
-      },
-      info: (...args: any[]) => {
-        capturedOutput.push(
-          "[Info] " +
-            args
-              .map((arg) =>
-                typeof arg === "object" ? JSON.stringify(arg) : String(arg)
-              )
-              .join(" ")
-        );
-      },
-      warn: (...args: any[]) => {
-        capturedOutput.push(
-          "[Warning] " +
-            args
-              .map((arg) =>
-                typeof arg === "object" ? JSON.stringify(arg) : String(arg)
-              )
-              .join(" ")
-        );
-      },
+    const timeoutDuration = 5000;
+    let workerTimeout: NodeJS.Timeout | null = null;
+
+    const clearWorkerAndTimeout = () => {
+      if (workerTimeout) {
+        clearTimeout(workerTimeout);
+        workerTimeout = null;
+      }
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+      setIsRunning(false);
     };
 
-    try {
-      // Create a function from the code string and execute it with the safe console
-      const executeCode = new Function("console", code);
-      executeCode(safeConsole);
-      setOutput(capturedOutput);
-    } catch (error) {
-      if (error instanceof Error) {
-        setOutput([`[Error] ${error.message}`]);
-      } else {
-        setOutput(["[Error] An unknown error occurred"]);
-      }
-    } finally {
-      setIsRunning(false);
-    }
+    workerTimeout = setTimeout(() => {
+      // Prepend initial warnings (if any) to the timeout message
+      setOutput([
+        ...initialOutput,
+        `[Error] Code execution timed out after ${
+          timeoutDuration / 1000
+        } seconds. Potential infinite loop detected.`,
+      ]);
+      clearWorkerAndTimeout();
+    }, timeoutDuration);
+
+    worker.onmessage = (event) => {
+      const { output: workerOutput, error: workerError } = event.data;
+      // Prepend initial warnings (if any) to the final output from the worker
+      setOutput([...initialOutput, ...(workerOutput || [])]);
+      clearWorkerAndTimeout();
+    };
+
+    worker.onerror = (error) => {
+      console.error("Worker error:", error);
+      // Prepend initial warnings (if any) to the worker error message
+      setOutput([...initialOutput, `[Error] Worker error: ${error.message}`]);
+      clearWorkerAndTimeout();
+    };
+
+    worker.postMessage({ code });
   };
 
   const handleClearOutput = () => {
@@ -100,6 +106,8 @@ const Playground: React.FC = () => {
 
   const confirmResetCode = () => {
     setCode(defaultCode);
+    setOutput([]);
+    setIsResetModalOpen(false);
   };
 
   return (
@@ -118,6 +126,7 @@ const Playground: React.FC = () => {
               onChange={setCode}
               onRun={handleRunCode}
               onReset={openResetConfirmation}
+              isRunning={isRunning}
             />
           }
           rightPanel={

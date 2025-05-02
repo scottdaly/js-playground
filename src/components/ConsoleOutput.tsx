@@ -37,7 +37,7 @@ const ConsoleOutput: React.FC<ConsoleOutputProps> = ({ output, onClear }) => {
           output.map((line, index) => (
             <div
               key={index}
-              className={`py-1 font-sans ${
+              className={`py-1 font-sans text-lg ${
                 line.includes("[Error]")
                   ? "text-red-600 dark:text-red-400"
                   : line.includes("[Info]")
