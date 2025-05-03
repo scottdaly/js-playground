@@ -19,9 +19,21 @@ const Preview: React.FC<PreviewProps> = ({ htmlCode, cssCode, jsCode }) => {
   const [srcDoc, setSrcDoc] = useState("");
 
   useEffect(() => {
-    // Debounce the srcDoc update
     const timeout = setTimeout(() => {
-      // Removed workerScript, blob, workerBlobUrl, iframeBootstrapScript logic
+      // Create the script content, including the try/catch block
+      const scriptContent = `
+        try {
+          ${jsCode}
+        } catch (err) {
+          console.error('[Execution Error]', err);
+        }
+      `;
+
+      // Create a Blob from the script content
+      const blob = new Blob([scriptContent], {
+        type: "application/javascript",
+      });
+      const scriptBlobUrl = URL.createObjectURL(blob);
 
       setSrcDoc(`
         <html>
@@ -31,29 +43,27 @@ const Preview: React.FC<PreviewProps> = ({ htmlCode, cssCode, jsCode }) => {
           </head>
           <body>
             ${htmlCode}
-            <script type="module">
-              try {
-                ${jsCode}
-              } catch (err) {
-                 // Basic error catching and display within the iframe console
-                 console.error('[Execution Error]', err);
-              }
-            </script>
+            <script type="module" src="${scriptBlobUrl}"></script>
           </body>
         </html>
       `);
+
+      // Return cleanup function to revoke the Blob URL when the effect re-runs or component unmounts
+      return () => {
+        URL.revokeObjectURL(scriptBlobUrl);
+        clearTimeout(timeout);
+      };
     }, DEBOUNCE_TIMEOUT);
 
-    // Cleanup function for the debounce timeout
-    // No need to revoke Blob URL anymore
+    // Also clear the outer timeout if props change before it fires
     return () => clearTimeout(timeout);
-  }, [htmlCode, cssCode, jsCode]); // Re-run effect if code changes
+  }, [htmlCode, cssCode, jsCode]);
 
   return (
     <iframe
       srcDoc={srcDoc}
       title="Preview"
-      // Removed 'allow-same-origin' for testing. Keep allow-scripts.
+      // Keep sandbox strict (allow-scripts is needed)
       sandbox="allow-scripts"
       frameBorder="0"
       width="100%"
