@@ -17,6 +17,9 @@ const defaultCss =
 const defaultJs =
   "// Example: Change H1 color after 2 seconds\nsetTimeout(() => {\n  const h1 = document.querySelector('h1');\n  if (h1) {\n    h1.style.color = 'blue';\n    console.log('H1 color changed by JS!');\n  }\n}, 2000);";
 
+// Regex for basic infinite loop detection
+const infiniteLoopPattern = /while\s*\(\s*true\s*\)|for\s*\(\s*;\s*;\s*\)/;
+
 const WebDevPlayground: React.FC = () => {
   // Initialize state with default values
   const [htmlCode, setHtmlCode] = useState(defaultHtml);
@@ -59,6 +62,13 @@ const WebDevPlayground: React.FC = () => {
     );
   };
 
+  // Check for potential infinite loops and prepend warning
+  let processedJsCode = jsCode;
+  if (infiniteLoopPattern.test(jsCode)) {
+    const warningMessage = `console.warn("[Warning] Potential infinite loop detected (e.g., while(true) or for(;;)). Execution might make the preview unresponsive.");\n`;
+    processedJsCode = warningMessage + jsCode;
+  }
+
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100 dark:bg-zinc-800">
       <Header layoutDirection={layoutDirection} onToggleLayout={toggleLayout} />
@@ -81,7 +91,11 @@ const WebDevPlayground: React.FC = () => {
           }
           rightPanel={
             <div className="h-full w-full bg-white dark:bg-[#161F20]">
-              <Preview htmlCode={htmlCode} cssCode={cssCode} jsCode={jsCode} />
+              <Preview
+                htmlCode={htmlCode}
+                cssCode={cssCode}
+                jsCode={processedJsCode}
+              />
             </div>
           }
         />
