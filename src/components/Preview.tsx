@@ -9,11 +9,10 @@ interface PreviewProps {
 // Timeout duration for debouncing updates
 const DEBOUNCE_TIMEOUT = 250; // 250ms
 
-// Define the iframe's Content Security Policy (Simpler version for direct execution)
-// No need for blob: or unsafe-eval for the bootstrap/worker itself anymore.
-// 'unsafe-inline' is needed for the embedded user script.
+// Define the iframe's Content Security Policy
+// Allow blob: for script-src to load the generated script blob
 const iframeCsp =
-  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; frame-ancestors 'none';";
+  "default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline'; connect-src 'none'; frame-ancestors 'none';";
 
 const Preview: React.FC<PreviewProps> = ({ htmlCode, cssCode, jsCode }) => {
   const [srcDoc, setSrcDoc] = useState("");
@@ -63,8 +62,8 @@ const Preview: React.FC<PreviewProps> = ({ htmlCode, cssCode, jsCode }) => {
     <iframe
       srcDoc={srcDoc}
       title="Preview"
-      // Keep sandbox strict (allow-scripts is needed)
-      sandbox="allow-scripts"
+      // Re-adding 'allow-same-origin' as loading blob: scripts might require non-opaque origin.
+      sandbox="allow-scripts allow-same-origin"
       frameBorder="0"
       width="100%"
       height="100%"
