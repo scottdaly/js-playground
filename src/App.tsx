@@ -7,8 +7,7 @@ function App() {
   return (
     <div className="h-screen">
       <Routes>
-        <Route path="/" element={<Navigate to="/js" replace />} />
-        <Route path="/js" element={<Playground />} />
+        <Route path="/" element={<Playground />} />
         <Route path="/web-dev" element={<WebDevPlayground />} />
       </Routes>
     </div>
