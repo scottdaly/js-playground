@@ -20,6 +20,9 @@ const defaultJs =
 // Regex for basic infinite loop detection
 const infiniteLoopPattern = /while\s*\(\s*true\s*\)|for\s*\(\s*;\s*;\s*\)/;
 
+// Type definitions for file types
+type CodeType = "html" | "css" | "js";
+
 const WebDevPlayground: React.FC = () => {
   // Initialize state with default values
   const [htmlCode, setHtmlCode] = useState(defaultHtml);
@@ -69,6 +72,77 @@ const WebDevPlayground: React.FC = () => {
     processedJsCode = warningMessage + jsCode;
   }
 
+  // Save handler
+  const handleSaveCode = async (key: CodeType) => {
+    let codeToSave: string;
+    let suggestedName: string;
+    let mimeType: string;
+    let fileExtension: string;
+
+    switch (key) {
+      case "html":
+        codeToSave = htmlCode;
+        suggestedName = "index.html";
+        mimeType = "text/html";
+        fileExtension = ".html";
+        break;
+      case "css":
+        codeToSave = cssCode;
+        suggestedName = "style.css";
+        mimeType = "text/css";
+        fileExtension = ".css";
+        break;
+      case "js":
+        codeToSave = jsCode;
+        suggestedName = "script.js";
+        mimeType = "text/javascript";
+        fileExtension = ".js";
+        break;
+    }
+
+    const fallbackSave = () => {
+      const blob = new Blob([codeToSave], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = suggestedName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    if ("showSaveFilePicker" in window) {
+      try {
+        // Define picker options (no explicit type needed here)
+        const pickerOpts = {
+          suggestedName: suggestedName,
+          types: [
+            {
+              description: `${key.toUpperCase()} File`,
+              // Assert types for mimeType and fileExtension
+              accept: { [mimeType as string]: [fileExtension as `.${string}`] },
+            },
+          ],
+        };
+
+        const handle = await window.showSaveFilePicker(pickerOpts);
+        const writable = await handle.createWritable();
+        await writable.write(codeToSave);
+        await writable.close();
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          console.info("Save dialog cancelled by user.");
+        } else {
+          console.error("Error saving file:", err);
+          fallbackSave();
+        }
+      }
+    } else {
+      fallbackSave();
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen w-full bg-gray-100 dark:bg-zinc-800">
       <Header layoutDirection={layoutDirection} onToggleLayout={toggleLayout} />
@@ -86,6 +160,7 @@ const WebDevPlayground: React.FC = () => {
               onHtmlChange={setHtmlCode}
               onCssChange={setCssCode}
               onJsChange={setJsCode}
+              onSave={handleSaveCode}
               layoutDirection={layoutDirection}
             />
           }

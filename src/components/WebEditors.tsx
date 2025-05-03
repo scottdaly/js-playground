@@ -5,6 +5,7 @@ import {
   ChevronDownIcon,
   ArrowsPointingOutIcon,
   ArrowsPointingInIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/solid"; // Import icons
 import ResizablePanel from "./ResizablePanel"; // Import ResizablePanel
 
@@ -21,6 +22,7 @@ interface WebEditorsProps {
   onHtmlChange: (value: string) => void;
   onCssChange: (value: string) => void;
   onJsChange: (value: string) => void;
+  onSave: (key: "html" | "css" | "js") => void;
   layoutDirection: "horizontal" | "vertical"; // Add prop for parent layout
 }
 
@@ -68,6 +70,7 @@ const EditorPane: React.FC<{
   editorKey: "html" | "css" | "js"; // Add key to identify the editor
   currentlyMaximized: "html" | "css" | "js" | null;
   onToggleMaximize: (key: "html" | "css" | "js") => void;
+  onSave: (key: "html" | "css" | "js") => void;
 }> = ({
   title,
   language,
@@ -78,6 +81,7 @@ const EditorPane: React.FC<{
   editorKey,
   currentlyMaximized,
   onToggleMaximize,
+  onSave,
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const editorRef = useRef<monacoEditor.editor.IStandaloneCodeEditor | null>(
@@ -87,6 +91,11 @@ const EditorPane: React.FC<{
 
   const handleFormatCode = () => {
     editorRef.current?.getAction("editor.action.formatDocument")?.run();
+    setIsDropdownOpen(false); // Close dropdown after action
+  };
+
+  const handleSave = () => {
+    onSave(editorKey);
     setIsDropdownOpen(false); // Close dropdown after action
   };
 
@@ -146,6 +155,13 @@ const EditorPane: React.FC<{
                 Format Code
               </button>
               <button
+                onClick={handleSave}
+                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-600"
+              >
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                Save File
+              </button>
+              <button
                 onClick={handleFullscreen}
                 className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-600"
               >
@@ -184,6 +200,7 @@ const WebEditors: React.FC<WebEditorsProps> = ({
   onCssChange,
   onJsChange,
   layoutDirection,
+  onSave,
 }) => {
   const [theme, setTheme] = useState("vs-dark");
   const monacoRef = useRef<Monaco | null>(null);
@@ -331,6 +348,7 @@ const WebEditors: React.FC<WebEditorsProps> = ({
           editorKey="html"
           currentlyMaximized={maximizedEditor}
           onToggleMaximize={handleToggleMaximize}
+          onSave={onSave}
         />
       }
       rightPanel={
@@ -352,6 +370,7 @@ const WebEditors: React.FC<WebEditorsProps> = ({
               editorKey="css"
               currentlyMaximized={maximizedEditor}
               onToggleMaximize={handleToggleMaximize}
+              onSave={onSave}
             />
           }
           rightPanel={
@@ -365,6 +384,7 @@ const WebEditors: React.FC<WebEditorsProps> = ({
               editorKey="js"
               currentlyMaximized={maximizedEditor}
               onToggleMaximize={handleToggleMaximize}
+              onSave={onSave}
             />
           }
         />

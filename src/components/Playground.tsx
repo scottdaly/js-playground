@@ -96,6 +96,51 @@ const Playground: React.FC = () => {
     worker.postMessage({ code });
   };
 
+  const handleSaveCode = async () => {
+    // Check if the File System Access API is supported
+    if ("showSaveFilePicker" in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: "script.js",
+          types: [
+            {
+              description: "JavaScript Files",
+              accept: { "text/javascript": [".js"] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(code);
+        await writable.close();
+      } catch (err) {
+        // Handle errors, e.g., user cancelling the dialog
+        if (err instanceof DOMException && err.name === "AbortError") {
+          console.info("Save dialog cancelled by user.");
+        } else {
+          console.error("Error saving file:", err);
+          // Optionally, fallback to the old method here too if needed
+          fallbackSave();
+        }
+      }
+    } else {
+      // Fallback for browsers that don't support the API
+      fallbackSave();
+    }
+  };
+
+  // Extracted fallback method
+  const fallbackSave = () => {
+    const blob = new Blob([code], { type: "text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "script.js"; // Suggested filename
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Clean up the object URL
+  };
+
   const handleClearOutput = () => {
     setOutput([]);
   };
@@ -126,6 +171,7 @@ const Playground: React.FC = () => {
               onChange={setCode}
               onRun={handleRunCode}
               onReset={openResetConfirmation}
+              onSave={handleSaveCode}
               isRunning={isRunning}
             />
           }

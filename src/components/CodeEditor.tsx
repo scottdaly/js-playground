@@ -4,6 +4,7 @@ import {
   CodeBracketIcon,
   ArrowPathIcon,
   StopIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/solid";
 import Editor, { Monaco } from "@monaco-editor/react";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
@@ -13,6 +14,7 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   onRun: () => void;
   onReset: () => void;
+  onSave: () => void;
   isRunning: boolean;
 }
 
@@ -21,6 +23,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onChange,
   onRun,
   onReset,
+  onSave,
   isRunning,
 }) => {
   const [theme, setTheme] = useState("vs-dark");
@@ -113,6 +116,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             disabled={isRunning}
           >
             <CodeBracketIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onSave}
+            className="flex items-center justify-center bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-200 p-2 rounded-lg transition-colors duration-200"
+            title="Save Code"
+            disabled={isRunning}
+          >
+            <ArrowDownTrayIcon className="w-4 h-4" />
           </button>
           <button
             onClick={onReset}
